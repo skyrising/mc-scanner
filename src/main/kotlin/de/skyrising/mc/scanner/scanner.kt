@@ -144,7 +144,8 @@ fun getHaystack(path: Path): Set<Scannable> {
     for (dim in listOf(".", "DIM-1", "DIM1")) {
         val dimPath = path.resolve(dim)
         if (!Files.exists(dimPath)) continue
-        val dimRegionPath = dimPath.resolve("region")
+for (subdir in listOf("region", "entities")) {
+        val dimRegionPath = dimPath.resolve(subdir)
         if (!Files.exists(dimRegionPath)) continue
         Files.list(dimRegionPath).forEach {
             if (it.fileName.toString().endsWith(".mca")) {
@@ -154,6 +155,7 @@ fun getHaystack(path: Path): Set<Scannable> {
                     e.printStackTrace()
                 }
             }
+}
         }
     }
     return haystack
