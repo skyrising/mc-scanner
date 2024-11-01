@@ -123,13 +123,17 @@ data class BlockIdMask(val id: Int, val metaMask: Int, val blockState: BlockStat
     }
 }
 
-data class ItemType(val id: Identifier, val damage: Int = -1, val flattened: Boolean = damage < 0) : Needle, Comparable<ItemType> {
+data class ItemType(val id: Identifier, val damage: Int = -1, val flattened: Boolean = damage < 0, val tag: CompoundTag? = null) : Needle, Comparable<ItemType> {
+    fun withTag(newTag: CompoundTag? = null): ItemType {
+        return ItemType(id, damage, flattened, newTag)
+    }
+
     fun flatten(): ItemType {
         if (this.flattened) return this
         var flattened = ITEM_MAP[this]
         if (flattened == null) flattened = ITEM_MAP[ItemType(id, 0)]
-        if (flattened == null) return ItemType(id, damage, true)
-        return ItemType(flattened, -1, true)
+        if (flattened == null) return ItemType(id, damage, true, tag)
+        return ItemType(flattened, -1, true, tag)
     }
 
     fun unflatten(): List<ItemType> {
@@ -144,7 +148,7 @@ data class ItemType(val id: Identifier, val damage: Int = -1, val flattened: Boo
     }
 
     override fun toString(): String {
-        return "ItemType(${format()})"
+        return "ItemType(${format()})${tag?.value?:""}"
     }
 
     fun format() = if (damage < 0 || (flattened && damage == 0)) "$id" else "$id.$damage"
@@ -152,6 +156,8 @@ data class ItemType(val id: Identifier, val damage: Int = -1, val flattened: Boo
     override fun compareTo(other: ItemType): Int {
         val idComp = id.compareTo(other.id)
         if (idComp != 0) return idComp
+        val tagComp = tag.toString().compareTo(other.tag.toString())
+        if (tagComp != 0) return tagComp
         return damage.compareTo(other.damage)
     }
 
