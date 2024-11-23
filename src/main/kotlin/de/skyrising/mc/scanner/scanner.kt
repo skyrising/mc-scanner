@@ -6,7 +6,7 @@ import it.unimi.dsi.fastutil.objects.*
 import joptsimple.OptionException
 import joptsimple.OptionParser
 import joptsimple.ValueConverter
-import java.io.PrintStream
+import java.io.InputStream
 import java.net.URI
 import java.nio.file.*
 import java.util.*
@@ -15,7 +15,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
-import java.util.function.ToIntFunction
 import kotlin.script.experimental.api.*
 import kotlin.script.experimental.host.toScriptSource
 import kotlin.script.experimental.jvmhost.BasicJvmScriptingHost
@@ -47,7 +46,7 @@ fun main(args: Array<String>) {
     val path: Path
     val outPath: Path
     val zip: FileSystem?
-    val script: Path
+    val script: InputStream
     try {
         val options = parser.parse(*args)
         if (options.has(helpArg)) {
@@ -77,7 +76,7 @@ fun main(args: Array<String>) {
         script = when {
             options.has(statsArg) -> builtinScript("stats")
             options.has(geode) -> builtinScript("geode")
-            paths.isNotEmpty() && paths[0].endsWith(".scan.kts") -> Paths.get(paths.removeAt(0))
+            paths.isNotEmpty() && paths[0].endsWith(".scan.kts") -> Paths.get(paths.removeAt(0)).toFile().inputStream()
             else -> builtinScript("search")
         }
         if (paths.size > 2 || paths.isEmpty()) throw IllegalArgumentException("Expected 1 or 2 paths")
@@ -144,7 +143,8 @@ fun getHaystack(path: Path): Set<Scannable> {
     for (dim in listOf(".", "DIM-1", "DIM1")) {
         val dimPath = path.resolve(dim)
         if (!Files.exists(dimPath)) continue
-        val dimRegionPath = dimPath.resolve("region")
+for (subdir in listOf("region", "entities")) {
+        val dimRegionPath = dimPath.resolve(subdir)
         if (!Files.exists(dimRegionPath)) continue
         Files.list(dimRegionPath).forEach {
             if (it.fileName.toString().endsWith(".mca")) {
@@ -154,24 +154,26 @@ fun getHaystack(path: Path): Set<Scannable> {
                     e.printStackTrace()
                 }
             }
+}
         }
     }
     return haystack
 }
 
-fun builtinScript(name: String): Path {
-    val url = ScannerScript::class.java.getResource("/scripts/$name.scan.kts")
-    return Paths.get(url?.toURI() ?: throw IllegalArgumentException("Script not found: $name"))
+fun builtinScript(name: String): InputStream {
+    val stream = ScannerScript::class.java.getResourceAsStream("/scripts/$name.scan.kts")
+        ?: throw IllegalArgumentException("Script not found: $name")
+    return stream
 }
 
-fun evalScript(path: Path, scan: Scan): ResultWithDiagnostics<EvaluationResult> {
-    val source = Files.readAllBytes(path).toString(Charsets.UTF_8).toScriptSource(path.fileName.toString())
+fun evalScript(stream: InputStream, scan: Scan): ResultWithDiagnostics<EvaluationResult> {
+    val source = stream.reader().readText().toScriptSource()
     return BasicJvmScriptingHost().evalWithTemplate<ScannerScript>(source, evaluation = {
         constructorArgs(scan)
     })
 }
 
-fun runScript(path: Path, outPath: Path, executor: ExecutorService, needles: List<Needle>, script: Path) {
+fun runScript(path: Path, outPath: Path, executor: ExecutorService, needles: List<Needle>, script: InputStream) {
     val scan = Scan(outPath, needles)
     evalScript(script, scan).valueOrThrow()
     val haystack = getHaystack(path).filterTo(mutableSetOf(), scan.haystackPredicate)

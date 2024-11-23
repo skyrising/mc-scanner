@@ -61,6 +61,10 @@ fun scanInventory(slots: ListTag<CompoundTag>, needles: Collection<ItemType>, st
                 }
             }
             if (bestMatch != null) {
+                if (slot.has("tag", Tag.COMPOUND)) {
+                    val tag = slot.getCompound("tag")
+                    bestMatch = bestMatch.withTag(tag)
+                }
                 result.addTo(bestMatch, slot.getInt("Count").toLong())
             }
         }

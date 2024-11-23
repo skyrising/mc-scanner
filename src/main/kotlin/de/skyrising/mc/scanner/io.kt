@@ -65,7 +65,7 @@ class ByteBufferDataInput(private val buf: ByteBuffer) : DataInput {
         var count = start
         var char2: Int
         var char3: Int
-        var chararrCount = 0
+        var chararrCount = start
         while (count < len) {
             val c = buf[pos + count].toInt() and 0xff
             when (c shr 4) {

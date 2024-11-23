@@ -147,7 +147,7 @@ private fun scanChunkItems(version: Int, data: CompoundTag, itemNeedles: Set<Ite
             addResults(results, container, contents, statsMode)
         }
     }
-    val entitiesTag = if (version >= DataVersion.REMOVE_LEVEL_TAG) "entities" else "Entities"
+for (entitiesTag in listOf("entities", "Entities")) {
     if (data.has(entitiesTag, Tag.LIST)) {
         for (entity in data.getList<CompoundTag>(entitiesTag)) {
             val id = entity.getString("id")
@@ -166,6 +166,7 @@ private fun scanChunkItems(version: Int, data: CompoundTag, itemNeedles: Set<Ite
             }
         }
     }
+}
 }
 
 fun scanBlockStates(ids: Int2ObjectMap<BlockState>, blockStates: LongArray, paletteSize: Int, packed: Boolean): Object2IntMap<BlockState> {
